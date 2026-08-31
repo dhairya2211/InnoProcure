@@ -8,7 +8,7 @@ import PilotAgreementModal from "../../components/PilotAgreementModal";
 export default function Shortlist() {
   const { challenges, applications, shortlistStartup, pilots, startups } = useApp();
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   const challengeId = searchParams.get("challengeId") || challenges[0]?.id || "ch_1";
   const challenge = challenges.find((c) => c.id === challengeId) || challenges[0];
