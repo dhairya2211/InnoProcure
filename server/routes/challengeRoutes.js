@@ -1,8 +1,9 @@
 const express = require("express");
-const { getChallenges } = require("../controllers/challengeController");
+const { getChallenges, createChallenge } = require("../controllers/challengeController");
 
 const router = express.Router();
 
 router.get("/", getChallenges);
+router.post("/", createChallenge);
 
 module.exports = router;
