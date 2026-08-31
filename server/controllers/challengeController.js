@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Challenge = require("../models/Challenge");
 
 function escapeRegex(value) {
@@ -27,6 +28,37 @@ exports.getChallenges = async (req, res) => {
         return res.status(200).json(challenges);
     } catch (error) {
         console.error("Get challenges error:", error);
+        return res.status(500).json({
+            message: "Server error"
+        });
+    }
+};
+
+function isValidObjectId(id) {
+    return mongoose.Types.ObjectId.isValid(id) && String(new mongoose.Types.ObjectId(id)) === id;
+}
+
+exports.getChallengeById = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({
+                message: "Invalid challenge ID"
+            });
+        }
+
+        const challenge = await Challenge.findById(id);
+
+        if (!challenge) {
+            return res.status(404).json({
+                message: "Challenge not found"
+            });
+        }
+
+        return res.status(200).json(challenge);
+    } catch (error) {
+        console.error("Get challenge by id error:", error);
         return res.status(500).json({
             message: "Server error"
         });
