@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Pilot = require("../models/Pilot");
 const Milestone = require("../models/Milestone");
 const Startup = require("../models/Startup");
+const Challenge = require("../models/Challenge");
 
 function isValidObjectId(id) {
     return mongoose.Types.ObjectId.isValid(id) && String(new mongoose.Types.ObjectId(id)) === id;
@@ -288,6 +289,106 @@ exports.releaseMilestonePayment = async (req, res) => {
         }
 
         console.error("Release milestone payment error:", error);
+        return res.status(500).json({
+            message: "Server error"
+        });
+    }
+};
+
+const FINALIZED_STATUSES = ["SCALED", "REJECTED"];
+
+function normalizeDecision(value) {
+    if (typeof value !== "string") {
+        return null;
+    }
+
+    const normalized = value.trim().toUpperCase().replace(/[\s-]+/g, "_");
+
+    if (["SCALED", "GO", "SCALE_UP", "SCALEUP"].includes(normalized)) {
+        return "SCALED";
+    }
+
+    if (["REJECTED", "NO_GO", "NOGO", "REJECTION"].includes(normalized)) {
+        return "REJECTED";
+    }
+
+    return null;
+}
+
+exports.submitFinalDecision = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({
+                message: "Invalid pilot ID"
+            });
+        }
+
+        const body = req.body || {};
+        const decision = normalizeDecision(body.decision);
+
+        if (!decision) {
+            return res.status(400).json({
+                message: "Invalid or missing request data",
+                details: "decision must be SCALED or REJECTED"
+            });
+        }
+
+        if (
+            body.scaledDepartments !== undefined &&
+            !Array.isArray(body.scaledDepartments)
+        ) {
+            return res.status(400).json({
+                message: "Invalid or missing request data",
+                details: "scaledDepartments must be an array"
+            });
+        }
+
+        const pilot = await Pilot.findById(id);
+
+        if (!pilot) {
+            return res.status(404).json({
+                message: "Pilot not found"
+            });
+        }
+
+        if (FINALIZED_STATUSES.includes(pilot.status) || (pilot.finalDecision && pilot.finalDecision.decision)) {
+            return res.status(409).json({
+                message: "Pilot has already received a final decision"
+            });
+        }
+
+        pilot.status = decision;
+        pilot.finalDecision = {
+            decision,
+            date: new Date(),
+            officerId: req.user._id,
+            comments: body.comments,
+            scaledDepartments: decision === "SCALED" ? (body.scaledDepartments || []) : []
+        };
+
+        const updatedPilot = await pilot.save();
+
+        if (pilot.challengeId) {
+            await Challenge.findByIdAndUpdate(pilot.challengeId, { status: decision });
+        }
+
+        return res.status(200).json({
+            id: updatedPilot._id,
+            status: updatedPilot.status,
+            finalDecision: updatedPilot.finalDecision,
+            pilot: updatedPilot
+        });
+    } catch (error) {
+        if (error.name === "ValidationError") {
+            return res.status(400).json({
+                message: "Invalid or missing request data",
+                details: error.message
+            });
+        }
+
+        console.error("Submit final decision error:", error);
         return res.status(500).json({
             message: "Server error"
         });

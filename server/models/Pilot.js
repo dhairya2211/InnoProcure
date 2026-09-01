@@ -38,7 +38,21 @@ const pilotSchema = new mongoose.Schema({
         default: false
     },
 
-    agreementDate: Date
+    agreementDate: Date,
+
+    finalDecision: {
+        decision: {
+            type: String,
+            enum: ["SCALED", "REJECTED"]
+        },
+        date: Date,
+        officerId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User"
+        },
+        comments: String,
+        scaledDepartments: [String]
+    }
 
 }, { timestamps: true });
 

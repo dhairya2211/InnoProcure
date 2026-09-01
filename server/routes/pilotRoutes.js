@@ -1,5 +1,5 @@
 const express = require("express");
-const { getPilotById, submitMilestoneEvidence, verifyMilestone, releaseMilestonePayment } = require("../controllers/pilotController");
+const { getPilotById, submitMilestoneEvidence, verifyMilestone, releaseMilestonePayment, submitFinalDecision } = require("../controllers/pilotController");
 const { protect, requireRole } = require("../middleware/auth");
 
 const router = express.Router();
@@ -21,6 +21,12 @@ router.patch(
     protect,
     requireRole("evaluator"),
     releaseMilestonePayment
+);
+router.post(
+    "/:id/decision",
+    protect,
+    requireRole("government"),
+    submitFinalDecision
 );
 router.get("/:id", getPilotById);
 
