@@ -136,3 +136,108 @@ exports.getApplications = async (req, res) => {
         });
     }
 };
+
+const RUBRIC_CRITERIA = [
+    "problemUnderstanding",
+    "techFeasibility",
+    "expectedImpact",
+    "capability",
+    "valueForMoney"
+];
+
+function isNumber(value) {
+    return typeof value === "number" && !Number.isNaN(value);
+}
+
+exports.scoreApplication = async (req, res) => {
+    try {
+        const applicationId = req.params.id;
+
+        if (!isValidObjectId(applicationId)) {
+            return res.status(400).json({
+                message: "Invalid application ID"
+            });
+        }
+
+        const application = await Application.findById(applicationId);
+
+        if (!application) {
+            return res.status(404).json({
+                message: "Application not found"
+            });
+        }
+
+        const body = req.body || {};
+
+        if (!isNumber(body.score)) {
+            return res.status(400).json({
+                message: "Invalid or missing request data",
+                details: "score must be a number"
+            });
+        }
+
+        if (body.score < 0 || body.score > 100) {
+            return res.status(400).json({
+                message: "Invalid or missing request data",
+                details: "score must be between 0 and 100"
+            });
+        }
+
+        if (!body.rubricBreakdown || typeof body.rubricBreakdown !== "object" || Array.isArray(body.rubricBreakdown)) {
+            return res.status(400).json({
+                message: "Invalid or missing request data",
+                details: "rubricBreakdown is required"
+            });
+        }
+
+        for (const criterion of RUBRIC_CRITERIA) {
+            if (!isNumber(body.rubricBreakdown[criterion])) {
+                return res.status(400).json({
+                    message: "Invalid or missing request data",
+                    details: `rubricBreakdown.${criterion} must be a number`
+                });
+            }
+        }
+
+        application.score = body.score;
+        application.rubricBreakdown = {
+            problemUnderstanding: body.rubricBreakdown.problemUnderstanding,
+            techFeasibility: body.rubricBreakdown.techFeasibility,
+            expectedImpact: body.rubricBreakdown.expectedImpact,
+            capability: body.rubricBreakdown.capability,
+            valueForMoney: body.rubricBreakdown.valueForMoney
+        };
+
+        if (body.evaluationComments !== undefined) {
+            application.evaluationComments = body.evaluationComments;
+        }
+
+        application.scoredDate = new Date();
+
+        if (body.scoredBy !== undefined && body.scoredBy !== null && body.scoredBy !== "") {
+            if (!isValidObjectId(body.scoredBy)) {
+                return res.status(400).json({
+                    message: "Invalid or missing request data",
+                    details: "scoredBy must be a valid MongoDB ObjectId"
+                });
+            }
+            application.scoredBy = body.scoredBy;
+        }
+
+        const updatedApplication = await application.save();
+
+        return res.status(200).json(updatedApplication);
+    } catch (error) {
+        if (error.name === "ValidationError") {
+            return res.status(400).json({
+                message: "Invalid or missing request data",
+                details: error.message
+            });
+        }
+
+        console.error("Score application error:", error);
+        return res.status(500).json({
+            message: "Server error"
+        });
+    }
+};
