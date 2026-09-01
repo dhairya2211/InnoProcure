@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { userService } from "../services/userService";
 import {
   initialUsers,
   initialStartups,
@@ -13,10 +14,21 @@ const AppContext = createContext();
 export function AppProvider({ children }) {
   // Current user / role state
   const [currentUser, setCurrentUser] = useState(() => {
+    
     const saved = localStorage.getItem("innoprocure_user");
     return saved ? JSON.parse(saved) : initialUsers[0]; // default to Government Officer
   });
-
+  const fetchUsers = async () => {
+    try {
+      const data = await userService.getUsers();
+      setUsers(data);
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+    }
+  };
+  useEffect(() => {
+    fetchUsers();
+  }, []);
   const [isPublicView, setIsPublicView] = useState(false);
 
   // Entities state
@@ -431,18 +443,22 @@ export function AppProvider({ children }) {
   };
 
   // Admin User Management
-  const addUser = (userData) => {
-    const newUser = {
-      id: `usr_${Date.now()}`,
-      name: userData.name,
-      email: userData.email,
-      role: userData.role,
-      department: userData.department || "Public Department",
-      designation: userData.designation || "Officer",
-      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-    };
-    setUsers((prev) => [...prev, newUser]);
-    logActivity("USER_PROVISIONED", `Admin created user ${newUser.name} with role ${newUser.role}`);
+  const addUser = async (userData) => {
+    try {
+      const newUser = await userService.addUser(userData);
+  
+      setUsers((prev) => [...prev, newUser]);
+  
+      logActivity(
+        "USER_PROVISIONED",
+        `Admin created user ${newUser.name} with role ${newUser.role}`
+      );
+  
+      return newUser;
+    } catch (error) {
+      console.error("Failed to create user:", error);
+      throw error;
+    }
   };
 
   // Startup profile update
@@ -493,18 +509,19 @@ export function AppProvider({ children }) {
     notifications,
 
     // Actions
-    createChallenge,
-    submitApplication,
-    scoreApplication,
-    shortlistStartup,
-    submitMilestoneEvidence,
-    verifyMilestone,
-    releasePayment,
-    makeFinalDecision,
-    addUser,
-    updateStartupProfile,
-    resetDemoState,
-    logActivity,
+createChallenge,
+submitApplication,
+scoreApplication,
+shortlistStartup,
+submitMilestoneEvidence,
+verifyMilestone,
+releasePayment,
+makeFinalDecision,
+fetchUsers,
+addUser,
+updateStartupProfile,
+resetDemoState,
+logActivity,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

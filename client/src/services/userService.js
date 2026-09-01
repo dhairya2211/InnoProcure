@@ -1,21 +1,14 @@
-/**
- * User Service - Service abstraction layer for User & Startup profile management.
- */
+import { apiRequest } from "./api";
 
-export const mockUserService = {
-  async getUsers(context) {
-    return context.users;
+export const userService = {
+  async getUsers() {
+    return apiRequest("/api/users");
   },
 
-  async getStartups(context) {
-    return context.startups;
-  },
-
-  async addUser(context, userData) {
-    return context.addUser(userData);
-  },
-
-  async updateStartupProfile(context, startupId, profileData) {
-    return context.updateStartupProfile(startupId, profileData);
+  async addUser(userData) {
+    return apiRequest("/api/users", {
+      method: "POST",
+      body: JSON.stringify(userData),
+    });
   },
 };

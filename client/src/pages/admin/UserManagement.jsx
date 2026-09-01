@@ -9,6 +9,7 @@ export default function UserManagement() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    password: "password123",
     role: "government",
     department: "",
     designation: "",
@@ -18,12 +19,32 @@ export default function UserManagement() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleAddUser = (e) => {
+  const handleAddUser = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.email) return;
-    addUser(formData);
-    alert(`User ${formData.name} provisioned with role ${formData.role}!`);
-    setFormData({ name: "", email: "", role: "government", department: "", designation: "" });
+  
+    if (!formData.name || !formData.email || !formData.password) {
+      alert("Name, email, and password are required.");
+      return;
+    }
+  
+    try {
+      await addUser(formData);
+  
+      alert(
+        `User ${formData.name} provisioned with role ${formData.role}!`
+      );
+  
+      setFormData({
+        name: "",
+        email: "",
+        password: "password123",
+        role: "government",
+        department: "",
+        designation: "",
+      });
+    } catch (error) {
+      alert(error.message || "Failed to create user.");
+    }
   };
 
   return (
@@ -151,7 +172,8 @@ export default function UserManagement() {
                 {users.map((u) => (
                   <tr key={u.id} className="hover:bg-slate-50">
                     <td className="p-3 font-bold text-slate-900 flex items-center space-x-2">
-                      <img src={u.avatar} alt={u.name} className="w-7 h-7 rounded-full object-cover border" />
+                      <img src={ u.avatar ||
+  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"} alt={u.name} className="w-7 h-7 rounded-full object-cover border" />
                       <span>{u.name}</span>
                     </td>
                     <td className="p-3 text-slate-600 font-mono">{u.email}</td>
