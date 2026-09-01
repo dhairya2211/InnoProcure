@@ -1,18 +1,25 @@
-/**
- * Challenge Service - Service abstraction layer for Challenge operations.
- * Future Backend Developer: Replace mock implementations here with `api.get('/challenges')` etc.
- */
+import { apiRequest } from "./api";
 
-export const mockChallengeService = {
-  async getChallenges(context) {
-    return context.challenges;
-  },
+function mapChallenge(challenge) {
+  const id = challenge._id || challenge.id;
 
-  async getChallengeById(context, id) {
-    return context.challenges.find((c) => c.id === id) || null;
-  },
+  return {
+    ...challenge,
+    id: id ? String(id) : challenge.id,
+    budget:
+      typeof challenge.budget === "number"
+        ? String(challenge.budget)
+        : challenge.budget,
+    createdDate:
+      challenge.createdDate ||
+      (challenge.createdAt ? String(challenge.createdAt).slice(0, 10) : undefined),
+    applicationsCount: challenge.applicationsCount ?? 0,
+  };
+}
 
-  async createChallenge(context, challengeData) {
-    return context.createChallenge(challengeData);
+export const challengeService = {
+  async getChallenges() {
+    const data = await apiRequest("/api/challenges");
+    return Array.isArray(data) ? data.map(mapChallenge) : [];
   },
 };

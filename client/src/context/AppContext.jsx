@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { userService } from "../services/userService";
+import { challengeService } from "../services/challengeService";
 import {
   initialUsers,
   initialStartups,
-  initialChallenges,
   initialApplications,
   initialPilots,
   initialActivities,
