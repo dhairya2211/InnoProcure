@@ -23,6 +23,7 @@ app.use("/api/applications", require("./routes/applicationRoutes"));
 app.use("/api/pilots", require("./routes/pilotRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/startups", require("./routes/startupRoutes"));
+
 app.get("/", (req, res) => {
     res.json({
         message: "InnoProcure Backend is running"
