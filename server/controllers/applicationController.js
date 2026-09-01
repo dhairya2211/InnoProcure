@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Application = require("../models/Application");
 const Challenge = require("../models/Challenge");
 const Startup = require("../models/Startup");
+const Pilot = require("../models/Pilot");
 
 function isValidObjectId(id) {
     return mongoose.Types.ObjectId.isValid(id) && String(new mongoose.Types.ObjectId(id)) === id;
@@ -236,6 +237,96 @@ exports.scoreApplication = async (req, res) => {
         }
 
         console.error("Score application error:", error);
+        return res.status(500).json({
+            message: "Server error"
+        });
+    }
+};
+
+exports.shortlistApplication = async (req, res) => {
+    try {
+        const applicationId = req.params.id;
+
+        if (!isValidObjectId(applicationId)) {
+            return res.status(400).json({
+                message: "Invalid application ID"
+            });
+        }
+
+        const application = await Application.findById(applicationId);
+
+        if (!application) {
+            return res.status(404).json({
+                message: "Application not found"
+            });
+        }
+
+        if (!application.challengeId || !isValidObjectId(String(application.challengeId))) {
+            return res.status(400).json({
+                message: "Invalid or missing request data",
+                details: "Application is missing a valid challengeId"
+            });
+        }
+
+        if (!application.startupId || !isValidObjectId(String(application.startupId))) {
+            return res.status(400).json({
+                message: "Invalid or missing request data",
+                details: "Application is missing a valid startupId"
+            });
+        }
+
+        const challenge = await Challenge.findById(application.challengeId);
+
+        if (!challenge) {
+            return res.status(404).json({
+                message: "Challenge not found"
+            });
+        }
+
+        const startup = await Startup.findById(application.startupId);
+
+        if (!startup) {
+            return res.status(400).json({
+                message: "Invalid startup ID"
+            });
+        }
+
+        let pilot = await Pilot.findOne({ applicationId: application._id });
+
+        if (!pilot) {
+            const totalBudget = application.requestedBudget != null
+                ? application.requestedBudget
+                : challenge.budget;
+
+            pilot = await Pilot.create({
+                challengeId: application.challengeId,
+                applicationId: application._id,
+                startupId: application.startupId,
+                totalBudget
+            });
+        }
+
+        application.status = "SHORTLISTED";
+        await application.save();
+
+        challenge.shortlistedStartupId = application.startupId;
+        challenge.status = "PILOT_IN_PROGRESS";
+        await challenge.save();
+
+        return res.status(200).json({
+            message: "Application shortlisted successfully",
+            application,
+            pilot
+        });
+    } catch (error) {
+        if (error.name === "ValidationError") {
+            return res.status(400).json({
+                message: "Invalid or missing request data",
+                details: error.message
+            });
+        }
+
+        console.error("Shortlist application error:", error);
         return res.status(500).json({
             message: "Server error"
         });
