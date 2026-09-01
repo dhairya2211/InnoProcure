@@ -123,3 +123,103 @@ exports.submitMilestoneEvidence = async (req, res) => {
         });
     }
 };
+
+const VERIFIABLE_STATUSES = ["SUBMITTED", "UNDER_VERIFICATION"];
+
+function parseApproval(body) {
+    if (typeof body.isApproved === "boolean") {
+        return body.isApproved;
+    }
+    if (typeof body.approved === "boolean") {
+        return body.approved;
+    }
+    return undefined;
+}
+
+exports.verifyMilestone = async (req, res) => {
+    try {
+        const { id, msId } = req.params;
+
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({
+                message: "Invalid pilot ID"
+            });
+        }
+
+        if (!isValidObjectId(msId)) {
+            return res.status(400).json({
+                message: "Invalid milestone ID"
+            });
+        }
+
+        const body = req.body || {};
+        const isApproved = parseApproval(body);
+
+        if (typeof isApproved !== "boolean") {
+            return res.status(400).json({
+                message: "Invalid or missing request data",
+                details: "isApproved must be a boolean"
+            });
+        }
+
+        const pilot = await Pilot.findById(id);
+
+        if (!pilot) {
+            return res.status(404).json({
+                message: "Pilot not found"
+            });
+        }
+
+        const milestone = await Milestone.findById(msId);
+
+        if (!milestone) {
+            return res.status(404).json({
+                message: "Milestone not found"
+            });
+        }
+
+        if (String(milestone.pilotId) !== String(pilot._id)) {
+            return res.status(400).json({
+                message: "Milestone does not belong to this pilot"
+            });
+        }
+
+        const hasEvidence = Boolean(
+            (milestone.evidenceUrl && String(milestone.evidenceUrl).trim()) ||
+            (milestone.evidenceNotes && String(milestone.evidenceNotes).trim())
+        );
+
+        if (!hasEvidence || !VERIFIABLE_STATUSES.includes(milestone.status)) {
+            return res.status(400).json({
+                message: "Milestone does not have required evidence for verification"
+            });
+        }
+
+        milestone.status = isApproved ? "VERIFIED" : "INCOMPLETE";
+        milestone.verifiedDate = new Date();
+        milestone.verifiedBy = req.user._id;
+
+        if (body.verificationComments !== undefined || body.comments !== undefined) {
+            const comments = body.verificationComments !== undefined
+                ? body.verificationComments
+                : body.comments;
+            milestone.verificationComments = comments;
+        }
+
+        const updatedMilestone = await milestone.save();
+
+        return res.status(200).json(updatedMilestone);
+    } catch (error) {
+        if (error.name === "ValidationError") {
+            return res.status(400).json({
+                message: "Invalid or missing request data",
+                details: error.message
+            });
+        }
+
+        console.error("Verify milestone error:", error);
+        return res.status(500).json({
+            message: "Server error"
+        });
+    }
+};
