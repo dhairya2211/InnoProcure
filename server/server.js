@@ -20,6 +20,7 @@ app.use(express.json());
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/challenges", require("./routes/challengeRoutes"));
 app.use("/api/applications", require("./routes/applicationRoutes"));
+app.use("/api/pilots", require("./routes/pilotRoutes"));
 
 app.get("/", (req, res) => {
     res.json({
