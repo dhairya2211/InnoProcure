@@ -7,18 +7,35 @@ function isValidObjectId(id) {
     return mongoose.Types.ObjectId.isValid(id) && String(new mongoose.Types.ObjectId(id)) === id;
 }
 
-const REQUIRED_FIELDS = ["startupId", "proposedSolution", "implementationApproach"];
+const REQUIRED_FIELDS = [
+    "startupId",
+    "proposedSolution",
+    "implementationApproach",
+    "expectedOutcome",
+    "timelineDays",
+    "requestedBudget",
+    "relevantExperience"
+];
 
 exports.createApplication = async (req, res) => {
     try {
         const challengeId = req.params.id;
-        const body = req.body || {};
 
         if (!isValidObjectId(challengeId)) {
             return res.status(400).json({
                 message: "Invalid challenge ID"
             });
         }
+
+        const challenge = await Challenge.findById(challengeId);
+
+        if (!challenge) {
+            return res.status(404).json({
+                message: "Challenge not found"
+            });
+        }
+
+        const body = req.body || {};
 
         const missingFields = REQUIRED_FIELDS.filter((field) => {
             const value = body[field];
@@ -38,19 +55,25 @@ exports.createApplication = async (req, res) => {
             });
         }
 
-        const challenge = await Challenge.findById(challengeId);
-
-        if (!challenge) {
-            return res.status(404).json({
-                message: "Challenge not found"
-            });
-        }
-
         const startup = await Startup.findById(body.startupId);
 
         if (!startup) {
-            return res.status(404).json({
-                message: "Startup not found"
+            return res.status(400).json({
+                message: "Invalid startup ID"
+            });
+        }
+
+        if (typeof body.timelineDays !== "number" || Number.isNaN(body.timelineDays)) {
+            return res.status(400).json({
+                message: "Invalid or missing request data",
+                details: "timelineDays must be a number"
+            });
+        }
+
+        if (typeof body.requestedBudget !== "number" || Number.isNaN(body.requestedBudget)) {
+            return res.status(400).json({
+                message: "Invalid or missing request data",
+                details: "requestedBudget must be a number"
             });
         }
 
@@ -62,7 +85,8 @@ exports.createApplication = async (req, res) => {
             expectedOutcome: body.expectedOutcome,
             timelineDays: body.timelineDays,
             requestedBudget: body.requestedBudget,
-            relevantExperience: body.relevantExperience
+            relevantExperience: body.relevantExperience,
+            status: "SUBMITTED"
         });
 
         return res.status(201).json(application);
