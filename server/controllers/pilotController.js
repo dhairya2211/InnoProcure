@@ -223,3 +223,73 @@ exports.verifyMilestone = async (req, res) => {
         });
     }
 };
+
+exports.releaseMilestonePayment = async (req, res) => {
+    try {
+        const { id, msId } = req.params;
+
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({
+                message: "Invalid pilot ID"
+            });
+        }
+
+        if (!isValidObjectId(msId)) {
+            return res.status(400).json({
+                message: "Invalid milestone ID"
+            });
+        }
+
+        const pilot = await Pilot.findById(id);
+
+        if (!pilot) {
+            return res.status(404).json({
+                message: "Pilot not found"
+            });
+        }
+
+        const milestone = await Milestone.findById(msId);
+
+        if (!milestone) {
+            return res.status(404).json({
+                message: "Milestone not found"
+            });
+        }
+
+        if (String(milestone.pilotId) !== String(pilot._id)) {
+            return res.status(400).json({
+                message: "Milestone does not belong to this pilot"
+            });
+        }
+
+        if (milestone.status !== "VERIFIED") {
+            return res.status(400).json({
+                message: "Milestone must be verified before payment can be released"
+            });
+        }
+
+        if (milestone.paymentStatus === "RELEASED") {
+            return res.status(400).json({
+                message: "Payment has already been released"
+            });
+        }
+
+        milestone.paymentStatus = "RELEASED";
+
+        const updatedMilestone = await milestone.save();
+
+        return res.status(200).json(updatedMilestone);
+    } catch (error) {
+        if (error.name === "ValidationError") {
+            return res.status(400).json({
+                message: "Invalid or missing request data",
+                details: error.message
+            });
+        }
+
+        console.error("Release milestone payment error:", error);
+        return res.status(500).json({
+            message: "Server error"
+        });
+    }
+};
