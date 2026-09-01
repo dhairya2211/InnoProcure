@@ -6,6 +6,7 @@ function escapeRegex(value) {
 }
 
 exports.getChallenges = async (req, res) => {
+    
     try {
         const { category, search } = req.query;
         const filter = {};
@@ -139,6 +140,119 @@ exports.createChallenge = async (req, res) => {
         }
 
         console.error("Create challenge error:", error);
+        return res.status(500).json({
+            message: "Server error"
+        });
+    }
+};
+
+const UPDATABLE_FIELDS = [
+    "title",
+    "department",
+    "category",
+    "problemStatement",
+    "desiredOutcome",
+    "measurableOutcomeTarget",
+    "budget",
+    "timelineDays",
+    "applicationDeadline",
+    "dataSensitivity",
+    "requiredCapabilities",
+    "status",
+    "createdBy",
+    "evaluatorId",
+    "shortlistedStartupId"
+];
+
+const OBJECT_ID_FIELDS = ["createdBy", "evaluatorId", "shortlistedStartupId"];
+
+exports.updateChallenge = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({
+                message: "Invalid challenge ID"
+            });
+        }
+
+        const challenge = await Challenge.findById(id);
+
+        if (!challenge) {
+            return res.status(404).json({
+                message: "Challenge not found"
+            });
+        }
+
+        const body = req.body || {};
+        const updates = {};
+
+        for (const field of UPDATABLE_FIELDS) {
+            if (Object.prototype.hasOwnProperty.call(body, field)) {
+                updates[field] = body[field];
+            }
+        }
+
+        if (Object.prototype.hasOwnProperty.call(updates, "budget")) {
+            if (typeof updates.budget !== "number" || Number.isNaN(updates.budget)) {
+                return res.status(400).json({
+                    message: "Invalid or missing request data",
+                    details: "budget must be a number"
+                });
+            }
+        }
+
+        if (Object.prototype.hasOwnProperty.call(updates, "timelineDays")) {
+            if (typeof updates.timelineDays !== "number" || Number.isNaN(updates.timelineDays)) {
+                return res.status(400).json({
+                    message: "Invalid or missing request data",
+                    details: "timelineDays must be a number"
+                });
+            }
+        }
+
+        if (
+            Object.prototype.hasOwnProperty.call(updates, "requiredCapabilities") &&
+            !Array.isArray(updates.requiredCapabilities)
+        ) {
+            return res.status(400).json({
+                message: "Invalid or missing request data",
+                details: "requiredCapabilities must be an array"
+            });
+        }
+
+        for (const field of OBJECT_ID_FIELDS) {
+            if (!Object.prototype.hasOwnProperty.call(updates, field)) {
+                continue;
+            }
+
+            const value = updates[field];
+
+            if (value === null) {
+                continue;
+            }
+
+            if (!isValidObjectId(value)) {
+                return res.status(400).json({
+                    message: "Invalid or missing request data",
+                    details: `${field} must be a valid MongoDB ObjectId`
+                });
+            }
+        }
+
+        Object.assign(challenge, updates);
+        const updatedChallenge = await challenge.save();
+
+        return res.status(200).json(updatedChallenge);
+    } catch (error) {
+        if (error.name === "ValidationError") {
+            return res.status(400).json({
+                message: "Invalid or missing request data",
+                details: error.message
+            });
+        }
+
+        console.error("Update challenge error:", error);
         return res.status(500).json({
             message: "Server error"
         });
