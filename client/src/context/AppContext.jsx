@@ -7,6 +7,7 @@ import {
   initialApplications,
   initialPilots,
   initialActivities,
+  initialChallenges,
 } from "../data/mockData";
 
 const AppContext = createContext();
@@ -18,6 +19,12 @@ export function AppProvider({ children }) {
     const saved = localStorage.getItem("innoprocure_user");
     return saved ? JSON.parse(saved) : initialUsers[0]; // default to Government Officer
   });
+
+  const [users, setUsers] = useState(() => {
+    const saved = localStorage.getItem("innoprocure_users");
+    return saved ? JSON.parse(saved) : initialUsers;
+  });
+  
   const fetchUsers = async () => {
     try {
       const data = await userService.getUsers();
@@ -32,10 +39,7 @@ export function AppProvider({ children }) {
   const [isPublicView, setIsPublicView] = useState(false);
 
   // Entities state
-  const [users, setUsers] = useState(() => {
-    const saved = localStorage.getItem("innoprocure_users");
-    return saved ? JSON.parse(saved) : initialUsers;
-  });
+  
 
   const [startups, setStartups] = useState(() => {
     const saved = localStorage.getItem("innoprocure_startups");
