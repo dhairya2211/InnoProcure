@@ -35,7 +35,7 @@ export default function ChallengeManagement() {
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {challenges.map((ch) => (
-                  <tr key={ch.id} className="hover:bg-slate-50">
+                  <tr key={ch.id||ch._id} className="hover:bg-slate-50">
                     <td className="p-3">
                       <span className="font-bold text-slate-900 block text-sm">{ch.title}</span>
                       <span className="text-slate-500 text-[11px]">{ch.department}</span>
@@ -45,14 +45,21 @@ export default function ChallengeManagement() {
                     <td className="p-3">
                       <StatusBadge status={ch.status} />
                     </td>
-                    <td className="p-3 text-right">
-                      <Link
-                        to={`/government/challenge-details?id=${ch.id}`}
-                        className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded"
-                      >
-                        Inspect
-                      </Link>
-                    </td>
+                    <td className="p-3 text-right space-x-2">
+  <Link
+    to={`/government/challenge-details?id=${ch.id || ch._id}`}
+    className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded"
+  >
+    Inspect
+  </Link>
+
+  <Link
+    to={`/government/challenge-edit?id=${ch.id || ch._id}`}
+    className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded"
+  >
+    Edit
+  </Link>
+</td>
                   </tr>
                 ))}
               </tbody>

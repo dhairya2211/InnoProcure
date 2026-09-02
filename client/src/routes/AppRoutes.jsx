@@ -6,7 +6,7 @@ import GovernmentDashboard from "../pages/government/Dashboard";
 import CreateChallenge from "../pages/government/CreateChallenge";
 import ChallengeDetails from "../pages/government/ChallengeDetails";
 import FinalDecision from "../pages/government/FinalDecision";
-
+import EditChallenge from "../pages/government/EditChallenge";
 /* Startup Pages */
 import StartupDashboard from "../pages/startup/Dashboard";
 import BrowseChallenges from "../pages/startup/BrowseChallenges";
@@ -45,7 +45,10 @@ export default function AppRoutes() {
       <Route path="/government/create-challenge" element={<CreateChallenge />} />
       <Route path="/government/challenge-details" element={<ChallengeDetails />} />
       <Route path="/government/final-decision" element={<FinalDecision />} />
-
+      <Route
+  path="/government/challenge-edit"
+  element={<EditChallenge />}
+/>
       {/* Startup Routes */}
       <Route path="/startup/dashboard" element={<StartupDashboard />} />
       <Route path="/startup/challenges" element={<BrowseChallenges />} />

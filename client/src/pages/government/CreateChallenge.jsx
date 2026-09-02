@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { useApp } from "../../context/AppContext";
 import { useNavigate } from "react-router-dom";
-
+import { challengeService } from "../../services/challengeService";
 export default function CreateChallenge() {
-  const { createChallenge, currentUser } = useApp();
+  const {  currentUser } = useApp();
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
@@ -44,10 +44,36 @@ export default function CreateChallenge() {
     }, 800);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const newCh = createChallenge(formData);
-    navigate(`/government/challenge-details?id=${newCh.id}`);
+  
+    try {
+      const payload = {
+        title: formData.title,
+        department: formData.department,
+        category: formData.category,
+        problemStatement: formData.problemStatement,
+        desiredOutcome: formData.desiredOutcome,
+        measurableOutcomeTarget: formData.measurableOutcomeTarget,
+        budget: Number(String(formData.budget).replace(/,/g, "")),
+        timelineDays: Number(formData.timelineDays),
+        applicationDeadline: formData.applicationDeadline,
+        dataSensitivity: formData.dataSensitivity,
+        requiredCapabilities: formData.requiredCapabilities
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+      };
+  
+      const newChallenge = await challengeService.createChallenge(payload);
+  
+      navigate(
+        `/government/challenge-details?id=${newChallenge._id}`
+      );
+    } catch (err) {
+      console.error("Failed to create challenge:", err);
+      alert(err.message || "Failed to create challenge.");
+    }
   };
 
   return (
