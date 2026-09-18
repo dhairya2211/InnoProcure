@@ -10,7 +10,10 @@ export default function GovernmentDashboard() {
   const totalChallenges = challenges.length;
   const openChallenges = challenges.filter((c) => c.status === "OPEN").length;
   const activePilotsCount = pilots.filter((p) => p.status === "IN_PROGRESS").length;
-  const totalBudget = challenges.reduce((acc, curr) => acc + (parseFloat(curr.budget.replace(/,/g, "")) || 0), 0);
+  const totalBudget = challenges.reduce((acc, curr) => {
+    const budgetValue = typeof curr.budget === "number" ? curr.budget : parseFloat(String(curr.budget || "").replace(/,/g, ""));
+    return acc + (budgetValue || 0);
+  }, 0);
 
   return (
     <DashboardLayout role="government">

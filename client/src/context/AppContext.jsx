@@ -7,6 +7,7 @@ import {
   initialPilots,
   initialActivities,
 } from "../data/mockData";
+import { challengeService } from "../services/challengeService";
 
 const AppContext = createContext();
 
@@ -85,6 +86,33 @@ export function AppProvider({ children }) {
     localStorage.setItem("innoprocure_activities", JSON.stringify(activities));
   }, [activities]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadChallenges = async () => {
+      try {
+        const apiChallenges = await challengeService.getChallenges();
+        if (cancelled) {
+          return;
+        }
+
+        const apiIds = new Set(apiChallenges.map((challenge) => challenge.id));
+        setChallenges((prev) => {
+          const localOnly = prev.filter((challenge) => !apiIds.has(challenge.id));
+          return [...apiChallenges, ...localOnly];
+        });
+      } catch (error) {
+        console.error("Failed to load challenges from database:", error);
+      }
+    };
+
+    loadChallenges();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Role switching
   const switchRole = (roleName) => {
     const targetUser = users.find((u) => u.role === roleName);
@@ -115,32 +143,10 @@ export function AppProvider({ children }) {
   };
 
   // Create Challenge (Govt)
-  const createChallenge = (challengeData) => {
-    const newId = `ch_${Date.now()}`;
-    const newChallenge = {
-      id: newId,
-      title: challengeData.title,
-      department: challengeData.department || currentUser.department,
-      category: challengeData.category,
-      problemStatement: challengeData.problemStatement,
-      desiredOutcome: challengeData.desiredOutcome,
-      measurableOutcomeTarget: challengeData.measurableOutcomeTarget,
-      budget: challengeData.budget,
-      timelineDays: parseInt(challengeData.timelineDays, 10) || 90,
-      applicationDeadline: challengeData.applicationDeadline,
-      dataSensitivity: challengeData.dataSensitivity || "LOW",
-      requiredCapabilities: Array.isArray(challengeData.requiredCapabilities)
-        ? challengeData.requiredCapabilities
-        : (challengeData.requiredCapabilities || "").split(",").map((s) => s.trim()).filter(Boolean),
-      status: "OPEN",
-      createdDate: new Date().toISOString().split("T")[0],
-      createdBy: currentUser.name,
-      evaluatorId: "usr_eval_1",
-      applicationsCount: 0,
-      shortlistedStartupId: null,
-    };
+  const createChallenge = async (challengeData) => {
+    const newChallenge = await challengeService.createChallenge(challengeData, currentUser);
 
-    setChallenges((prev) => [newChallenge, ...prev]);
+    setChallenges((prev) => [newChallenge, ...prev.filter((challenge) => challenge.id !== newChallenge.id)]);
     logActivity("CHALLENGE_CREATED", `Created Challenge: "${newChallenge.title}" (${newChallenge.department})`);
     return newChallenge;
   };

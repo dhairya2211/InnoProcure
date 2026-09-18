@@ -6,7 +6,10 @@ import { Link } from "react-router-dom";
 export default function AdminDashboard() {
   const { users, startups, challenges, pilots, activities } = useApp();
 
-  const totalBudget = challenges.reduce((acc, c) => acc + (parseFloat(c.budget.replace(/,/g, "")) || 0), 0);
+  const totalBudget = challenges.reduce((acc, c) => {
+    const budgetValue = typeof c.budget === "number" ? c.budget : parseFloat(String(c.budget || "").replace(/,/g, ""));
+    return acc + (budgetValue || 0);
+  }, 0);
 
   return (
     <DashboardLayout role="admin">

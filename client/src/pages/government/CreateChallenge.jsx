@@ -26,6 +26,8 @@ export default function CreateChallenge() {
 
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggested, setAiSuggested] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -44,10 +46,18 @@ export default function CreateChallenge() {
     }, 800);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const newCh = createChallenge(formData);
-    navigate(`/government/challenge-details?id=${newCh.id}`);
+    setSubmitError("");
+    setSubmitting(true);
+
+    try {
+      const newCh = await createChallenge(formData);
+      navigate(`/government/challenge-details?id=${newCh.id}`);
+    } catch (error) {
+      setSubmitError(error.message || "Failed to publish challenge to the database.");
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -336,6 +346,12 @@ export default function CreateChallenge() {
                 <p>• Department: <strong>{formData.department}</strong></p>
               </div>
 
+              {submitError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-800">
+                  {submitError}
+                </div>
+              )}
+
               <div className="flex justify-between pt-4 border-t">
                 <button
                   type="button"
@@ -346,9 +362,10 @@ export default function CreateChallenge() {
                 </button>
                 <button
                   type="submit"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-md transition"
+                  disabled={submitting}
+                  className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-md transition"
                 >
-                  🚀 Publish Challenge to Ecosystem
+                  {submitting ? "Publishing..." : "🚀 Publish Challenge to Ecosystem"}
                 </button>
               </div>
             </div>

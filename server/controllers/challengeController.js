@@ -127,7 +127,8 @@ exports.createChallenge = async (req, res) => {
             timelineDays: body.timelineDays,
             applicationDeadline: body.applicationDeadline,
             dataSensitivity: body.dataSensitivity,
-            requiredCapabilities: body.requiredCapabilities
+            requiredCapabilities: body.requiredCapabilities,
+            status: "OPEN"
         });
 
         return res.status(201).json(challenge);

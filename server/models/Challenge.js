@@ -64,7 +64,7 @@ const challengeSchema = new mongoose.Schema({
             "SCALED",
             "REJECTED"
         ],
-        default: "DRAFT"
+        default: "OPEN"
     },
 
     createdBy: {
