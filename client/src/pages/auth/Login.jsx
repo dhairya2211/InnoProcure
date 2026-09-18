@@ -10,6 +10,7 @@ export default function Login() {
   const [selectedUser, setSelectedUser] = useState(users[0]);
   const [email, setEmail] = useState(users[0].email);
   const [password, setPassword] = useState("password123");
+  const [role, setRole] = useState("government");
 
   const handleSelectUser = (u) => {
     setSelectedUser(u);
@@ -19,19 +20,19 @@ export default function Login() {
   const handleLogin = (e) => {
     e.preventDefault();
     setCurrentUser(selectedUser);
-    navigate(`/${selectedUser.role}/dashboard`);
+    navigate(`/${role}/dashboard`);
   };
 
   return (
     <div className="min-h-screen w-full bg-slate-950 flex items-center justify-center p-4 sm:p-6 lg:p-8 text-slate-100 font-sans relative overflow-hidden">
-      
+
       {/* Decorative Background Glows */}
       <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-amber-500 via-blue-600 to-emerald-500" />
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
 
       <div className="w-full max-w-2xl bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8 z-10 my-auto">
-        
+
         {/* Portal Branding Header */}
         <div className="text-center space-y-2">
           <div className="inline-flex items-center justify-center p-2 rounded-2xl bg-slate-800/80 border border-slate-700/80 mb-1">
@@ -45,7 +46,7 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Demo Role Selector Section */}
+        {/* Demo Role Selector Section
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
@@ -91,7 +92,7 @@ export default function Login() {
               );
             })}
           </div>
-        </div>
+        </div> */}
 
         {/* Login Form */}
         <form onSubmit={handleLogin} className="space-y-4 pt-2 border-t border-slate-800">
@@ -121,11 +122,29 @@ export default function Login() {
             />
           </div>
 
+          {/* {role} */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+              Role
+            </label>
+
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
+            >
+              <option value="government">Government Officer</option>
+              <option value="startup">Startup</option>
+              <option value="evaluator">Evaluator</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
           <button
             type="submit"
             className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3.5 px-6 rounded-xl text-sm shadow-xl transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer flex items-center justify-center space-x-2"
           >
-            <span>Enter Portal as {selectedUser.name}</span>
+            <span>Enter Portal</span>
             <span>→</span>
           </button>
         </form>
