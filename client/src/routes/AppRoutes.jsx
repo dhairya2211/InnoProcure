@@ -32,6 +32,7 @@ import PublicChallengeView from "../pages/public/PublicChallengeView";
 
 // Auth & Fallback
 import Login from "../pages/auth/Login";
+import Signup from "../pages/auth/Signup";
 import NotFound from "../pages/NotFound";
 
 export default function AppRoutes() {
@@ -39,6 +40,7 @@ export default function AppRoutes() {
     <Routes>
       <Route path="/" element={<Login />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
 
       {/* Government Routes */}
       <Route path="/government/dashboard" element={<GovernmentDashboard />} />

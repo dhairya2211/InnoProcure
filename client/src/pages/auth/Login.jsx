@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useApp } from "../../context/AppContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Logo from "../../components/Logo";
 
 export default function Login() {
@@ -105,7 +105,7 @@ export default function Login() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition autofill:bg-slate-950 autofill:text-white [&:-webkit-autofill]:bg-slate-950 [&:-webkit-autofill]:text-white [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_#020617_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:white]"
             />
           </div>
 
@@ -118,7 +118,7 @@ export default function Login() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition autofill:bg-slate-950 autofill:text-white [&:-webkit-autofill]:bg-slate-950 [&:-webkit-autofill]:text-white [&:-webkit-autofill]:[box-shadow:0_0_0_1000px_#020617_inset] [&:-webkit-autofill]:[-webkit-text-fill-color:white]"
             />
           </div>
 
@@ -150,9 +150,20 @@ export default function Login() {
         </form>
 
         {/* Footer info */}
-        <div className="pt-2 flex items-center justify-between text-[11px] text-slate-500 font-medium">
-          <span>Rule 194 GFR 2017 Innovation Compliant</span>
-          <span>National Informatics Centre (NIC) Mock Portal</span>
+        <div className="pt-2 border-t border-slate-800">
+          <div className="flex items-center justify-center text-xs text-slate-400 mb-3">
+            <span>New to the portal?</span>
+            <Link
+              to="/signup"
+              className="ml-2 font-semibold text-emerald-400 hover:text-emerald-300 transition"
+            >
+              Create an account →
+            </Link>
+          </div>
+          <div className="flex items-center justify-between text-[11px] text-slate-500 font-medium">
+            <span>Rule 194 GFR 2017 Innovation Compliant</span>
+            <span>National Informatics Centre (NIC) Mock Portal</span>
+          </div>
         </div>
 
       </div>
