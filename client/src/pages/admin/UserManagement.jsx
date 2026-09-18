@@ -12,18 +12,31 @@ export default function UserManagement() {
     role: "government",
     department: "",
     designation: "",
+    password: "",
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleAddUser = (e) => {
+  const handleAddUser = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.email) return;
-    addUser(formData);
-    alert(`User ${formData.name} provisioned with role ${formData.role}!`);
-    setFormData({ name: "", email: "", role: "government", department: "", designation: "" });
+
+    setSubmitError("");
+    setSubmitting(true);
+
+    try {
+      await addUser(formData);
+      alert(`User ${formData.name} provisioned with role ${formData.role}!`);
+      setFormData({ name: "", email: "", role: "government", department: "", designation: "", password: "" });
+    } catch (error) {
+      setSubmitError(error.message || "Failed to provision user in the database.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -121,12 +134,33 @@ export default function UserManagement() {
             </div>
           </div>
 
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+              Temporary Password
+            </label>
+            <input
+              type="text"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="Leave blank to use InnoProcure@123"
+              className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:bg-white focus:outline-none"
+            />
+          </div>
+
+          {submitError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-800">
+              {submitError}
+            </div>
+          )}
+
           <div className="flex justify-end pt-2">
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg text-xs transition shadow-xs"
+              disabled={submitting}
+              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-bold px-4 py-2 rounded-lg text-xs transition shadow-xs"
             >
-              Provision Account & Assign Role
+              {submitting ? "Provisioning..." : "Provision Account & Assign Role"}
             </button>
           </div>
         </form>

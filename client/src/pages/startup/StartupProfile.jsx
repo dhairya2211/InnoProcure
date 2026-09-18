@@ -1,35 +1,71 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { useApp } from "../../context/AppContext";
 
+const EMPTY_PROFILE = {
+  companyName: "",
+  dpiitNumber: "",
+  foundingYear: "",
+  headquarters: "",
+  shortDescription: "",
+  capabilities: "",
+  pastExperience: "",
+  teamSize: "",
+  contactEmail: "",
+  contactPhone: "",
+};
+
 export default function StartupProfile() {
   const { currentUser, startups, updateStartupProfile } = useApp();
-  const startup = startups.find((s) => s.userId === currentUser.id) || startups[0];
+  const startup = startups.find((s) => s.userId === currentUser.id) || startups.find((s) => s.contactEmail === currentUser.email) || startups[0];
 
-  const [profile, setProfile] = useState({
-    companyName: startup.companyName,
-    dpiitNumber: startup.dpiitNumber,
-    foundingYear: startup.foundingYear,
-    headquarters: startup.headquarters,
-    shortDescription: startup.shortDescription,
-    capabilities: (startup.capabilities || []).join(", "),
-    pastExperience: startup.pastExperience,
-    teamSize: startup.teamSize,
-    contactEmail: startup.contactEmail,
-    contactPhone: startup.contactPhone,
-  });
+  const [profile, setProfile] = useState(EMPTY_PROFILE);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  useEffect(() => {
+    if (!startup) {
+      setProfile({
+        ...EMPTY_PROFILE,
+        contactEmail: currentUser?.email || "",
+      });
+      return;
+    }
+
+    setProfile({
+      companyName: startup.companyName || "",
+      dpiitNumber: startup.dpiitNumber || "",
+      foundingYear: startup.foundingYear || "",
+      headquarters: startup.headquarters || "",
+      shortDescription: startup.shortDescription || "",
+      capabilities: (startup.capabilities || []).join(", "),
+      pastExperience: startup.pastExperience || "",
+      teamSize: startup.teamSize || "",
+      contactEmail: startup.contactEmail || currentUser?.email || "",
+      contactPhone: startup.contactPhone || "",
+    });
+  }, [startup, currentUser]);
 
   const handleChange = (e) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    updateStartupProfile(startup.id, {
-      ...profile,
-      capabilities: profile.capabilities.split(",").map((s) => s.trim()).filter(Boolean),
-    });
-    alert("Startup profile updated successfully!");
+    setSubmitError("");
+    setSubmitting(true);
+
+    try {
+      await updateStartupProfile(startup?.id, {
+        ...profile,
+        capabilities: profile.capabilities.split(",").map((s) => s.trim()).filter(Boolean),
+      });
+      alert("Startup profile saved to the database.");
+    } catch (error) {
+      setSubmitError(error.message || "Failed to save startup profile to the database.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -148,11 +184,15 @@ export default function StartupProfile() {
           </div>
 
           <div className="flex justify-end pt-4 border-t">
+            {submitError && (
+              <p className="text-xs text-red-700 mr-auto self-center">{submitError}</p>
+            )}
             <button
               type="submit"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-lg text-sm shadow-md transition"
+              disabled={submitting}
+              className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold px-6 py-2.5 rounded-lg text-sm shadow-md transition"
             >
-              Save Profile Changes
+              {submitting ? "Saving..." : "Save Profile Changes"}
             </button>
           </div>
         </form>

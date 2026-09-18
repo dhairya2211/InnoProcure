@@ -8,6 +8,8 @@ import {
   initialActivities,
 } from "../data/mockData";
 import { challengeService } from "../services/challengeService";
+import { userService } from "../services/userService";
+import { isMongoId } from "../services/ids";
 
 const AppContext = createContext();
 
@@ -107,6 +109,47 @@ export function AppProvider({ children }) {
     };
 
     loadChallenges();
+
+    const loadUsersAndStartups = async () => {
+      try {
+        const [apiUsers, apiStartups] = await Promise.all([
+          userService.getUsers(),
+          userService.getStartups(),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        setUsers((prev) => {
+          const withCompany = apiUsers.map((user) => {
+            const startup = apiStartups.find((item) => item.userId === user.id);
+            return startup ? { ...user, companyName: startup.companyName } : user;
+          });
+          const emails = new Set(withCompany.map((user) => user.email));
+          return [...withCompany, ...prev.filter((user) => !emails.has(user.email))];
+        });
+
+        setStartups((prev) => {
+          const ids = new Set(apiStartups.map((startup) => startup.id));
+          const userIds = new Set(apiStartups.map((startup) => startup.userId));
+          const names = new Set(apiStartups.map((startup) => startup.companyName));
+          return [
+            ...apiStartups,
+            ...prev.filter(
+              (startup) =>
+                !ids.has(startup.id) &&
+                !userIds.has(startup.userId) &&
+                !names.has(startup.companyName)
+            ),
+          ];
+        });
+      } catch (error) {
+        console.error("Failed to load users and startups from database:", error);
+      }
+    };
+
+    loadUsersAndStartups();
 
     return () => {
       cancelled = true;
@@ -437,31 +480,88 @@ export function AppProvider({ children }) {
   };
 
   // Admin User Management
-  const addUser = (userData) => {
-    const newUser = {
-      id: `usr_${Date.now()}`,
-      name: userData.name,
-      email: userData.email,
-      role: userData.role,
-      department: userData.department || "Public Department",
-      designation: userData.designation || "Officer",
-      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+  const addUser = async (userData) => {
+    const newUser = await userService.createUser(userData);
+    const provisionedUser = {
+      ...newUser,
+      companyName: userData.role === "startup" ? (userData.department || `${newUser.name} Ventures`) : newUser.companyName,
     };
-    setUsers((prev) => [...prev, newUser]);
-    logActivity("USER_PROVISIONED", `Admin created user ${newUser.name} with role ${newUser.role}`);
+
+    setUsers((prev) => [...prev.filter((user) => user.email !== provisionedUser.email), provisionedUser]);
+
+    if (userData.role === "startup") {
+      const newStartup = await userService.createStartup(
+        {
+          userId: provisionedUser.id,
+          companyName: provisionedUser.companyName,
+          contactEmail: provisionedUser.email,
+          shortDescription: "Newly provisioned startup organization.",
+          capabilities: [],
+          technologyAreas: [],
+        },
+        currentUser
+      );
+
+      setStartups((prev) => [
+        newStartup,
+        ...prev.filter((startup) => startup.id !== newStartup.id && startup.userId !== newStartup.userId),
+      ]);
+    }
+
+    logActivity("USER_PROVISIONED", `Admin created user ${provisionedUser.name} with role ${provisionedUser.role}`);
+    return provisionedUser;
   };
 
   // Startup profile update
-  const updateStartupProfile = (startupId, updatedFields) => {
-    setStartups((prev) =>
-      prev.map((s) => {
-        if (s.id === startupId || s.userId === currentUser.id) {
-          return { ...s, ...updatedFields };
-        }
-        return s;
-      })
-    );
+  const updateStartupProfile = async (startupId, updatedFields) => {
+    let savedStartup;
+
+    if (isMongoId(startupId)) {
+      savedStartup = await userService.updateStartupProfile(startupId, updatedFields, currentUser);
+    } else {
+      const apiUsers = await userService.getUsers();
+      let owner = apiUsers.find((user) => user.email === currentUser.email);
+
+      if (!owner) {
+        owner = await userService.createUser({
+          name: currentUser.name,
+          email: currentUser.email,
+          role: "startup",
+          department: currentUser.companyName || currentUser.department,
+          designation: currentUser.designation,
+          avatar: currentUser.avatar,
+        });
+      }
+
+      setUsers((prev) => [...prev.filter((user) => user.email !== owner.email), owner]);
+
+      const apiStartups = await userService.getStartups();
+      const existingStartup = apiStartups.find((startup) => startup.userId === owner.id);
+
+      if (existingStartup) {
+        savedStartup = await userService.updateStartupProfile(existingStartup.id, updatedFields, currentUser);
+      } else {
+        savedStartup = await userService.createStartup(
+          {
+            userId: owner.id,
+            ...updatedFields,
+          },
+          currentUser
+        );
+      }
+    }
+
+    setStartups((prev) => [
+      savedStartup,
+      ...prev.filter(
+        (startup) =>
+          startup.id !== savedStartup.id &&
+          startup.id !== startupId &&
+          startup.userId !== savedStartup.userId
+      ),
+    ]);
     logActivity("PROFILE_UPDATED", `Startup profile updated by ${currentUser.name}`);
+    return savedStartup;
   };
 
   // Reset to initial demo state

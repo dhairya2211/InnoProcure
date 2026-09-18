@@ -7,9 +7,19 @@ import StatusBadge from "../../components/StatusBadge";
 export default function StartupDashboard() {
   const { currentUser, startups, applications, pilots, challenges } = useApp();
 
-  const startup = startups.find((s) => s.userId === currentUser.id) || startups[0];
-  const myApps = applications.filter((a) => a.startupId === startup.id);
-  const myPilots = pilots.filter((p) => p.startupId === startup.id);
+  const startup =
+    startups.find((s) => s.userId === currentUser.id) ||
+    startups.find((s) => s.contactEmail === currentUser.email) ||
+    startups[0] || {
+      id: "",
+      companyName: currentUser?.companyName || "Your Startup",
+      dpiitNumber: "Pending",
+      headquarters: "",
+      shortDescription: "Complete your organization profile to get started.",
+      capabilities: [],
+    };
+  const myApps = applications.filter((a) => a.startupId === startup?.id);
+  const myPilots = pilots.filter((p) => p.startupId === startup?.id);
 
   return (
     <DashboardLayout role="startup">

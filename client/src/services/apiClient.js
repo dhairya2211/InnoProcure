@@ -30,4 +30,10 @@ export const apiClient = {
       body: JSON.stringify(body),
     });
   },
+  patch(path, body) {
+    return request(path, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+  },
 };
